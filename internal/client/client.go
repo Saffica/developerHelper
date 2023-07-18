@@ -6,22 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 
-	"main/pkg/config"
-)
-
-const (
-	pathToConfig = "./configs/config.json"
+	"main/internal/config"
 )
 
 var (
-	cfg                 = getConfig(pathToConfig)
+	cfg                 = config.GetConfig()
 	authorizationHeader = getAuthorizationHeader(cfg)
 	tr                  = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	client              = &http.Client{Transport: tr, Timeout: 10 * time.Second}
@@ -89,7 +84,7 @@ func GetScriptedColumns() (map[string][]string, error) {
 	}
 
 	r := map[string][]string{
-		"sys_widget":    {"template"},
+		"sys_widget":    {"template", "css"},
 		"sys_ui_action": {"condition"},
 	}
 	for i := range scr.Data {
@@ -146,14 +141,6 @@ func fetchData(t string, p string) ([]byte, error) {
 	return body, nil
 }
 
-func getConfig(p string) *viper.Viper {
-	cfg, err := config.LoadConfig(p)
-	if err != nil {
-		log.Panic(err.Error())
-	}
-	return cfg
-}
-
 func getAuthorizationHeader(c *viper.Viper) string {
 	authorizationHeader := fmt.Sprintf("Bearer %s", c.GetString("TOKEN"))
 	return authorizationHeader
@@ -176,12 +163,40 @@ func prepareRecords(inputRecord map[string]interface{}, columns []string, tableN
 	}
 
 	for columnName := range m {
+		extension := geteFileExtension(tableName, columnName)
 		r = append(r, record{
-			FileName:  fmt.Sprintf("%s_%s.js", sysID, columnName),
+			FileName:  getFileName(sysID, tableName, columnName, extension),
 			Value:     m[columnName],
 			TableName: tableName,
 			SysID:     sysID,
 		})
 	}
 	return r
+}
+
+func getFileName(sysID string, tableName string, columnName string, extension string) string {
+	tableWithShortName := []string{"sys_widget"}
+
+	for _, v := range tableWithShortName {
+		if v == tableName {
+			return fmt.Sprintf("%s.%s", columnName, extension)
+		}
+	}
+
+	return fmt.Sprintf("%s_%s.%s", sysID, columnName, extension)
+}
+
+func geteFileExtension(tableName string, columnName string) string {
+	fmt.Println(tableName, columnName)
+	key := fmt.Sprintf("%s.%s", tableName, columnName)
+	extensions := map[string]string{
+		"sys_widget.css":      "css",
+		"sys_widget.template": "html",
+	}
+
+	if entry, ok := extensions[key]; ok {
+		return entry
+	}
+
+	return "js"
 }
