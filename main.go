@@ -1,19 +1,32 @@
 package main
 
 import (
-	// "log"
-
+	"fmt"
+	"log"
 	"main/internal/client"
-	// "main/pkg/config"
 )
 
 func main() {
-	// const pathToConfig = "./configs/config.json"
-	// cfg, err := config.LoadConfig(pathToConfig)
-	// if err != nil {
-	// 	log.Panic(err.Error())
-	// }
+	vcs, err := client.GetVCS()
+	if err != nil {
+		log.Panic(err.Error())
+	}
 
-	client.GetTargetTables()
-	// fmt.Println(cfg.GetString("INSTANCE_URL"))
+	vcsForRequest, err := client.PrepareVCS(vcs)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	files, err := client.GetRecordsByVCS(vcsForRequest)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	fmt.Println(files)
+	fileIsExist, err := client.Exists("D:\\Developer")
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	fmt.Println(fileIsExist)
 }
