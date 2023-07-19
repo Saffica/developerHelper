@@ -18,20 +18,15 @@ func CreateFiles(recordCandidates map[string]client.Table) (bool, error) {
 	}
 
 	for _, i := range files {
-		dir := fmt.Sprintf("%s\\%s", cfg.GetString("TARGET_DIR_PATH"), i.TableName)
-		folderIsExist, err := exists(dir)
-		if err != nil {
-			log.Panic(err.Error())
+		currentPath := fmt.Sprintf("%s\\%s", cfg.GetString("TARGET_DIR_PATH"), i.TableName)
+		createDir(currentPath)
+
+		if i.TableName == "sys_widget" {
+			currentPath = fmt.Sprintf("%s\\%s", currentPath, i.SysID)
+			createDir(currentPath)
 		}
 
-		if !folderIsExist {
-			err = os.Mkdir(dir, 0777)
-			if err != nil {
-				log.Panic(err.Error())
-			}
-		}
-
-		file := fmt.Sprintf("%s\\%s", dir, i.FileName)
+		file := fmt.Sprintf("%s\\%s", currentPath, i.FileName)
 		f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0777)
 		if err != nil {
 			log.Panic(err.Error())
@@ -43,6 +38,20 @@ func CreateFiles(recordCandidates map[string]client.Table) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func createDir(p string) {
+	folderIsExist, err := exists(p)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	if !folderIsExist {
+		err = os.Mkdir(p, 0777)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+	}
 }
 
 func exists(path string) (bool, error) {
