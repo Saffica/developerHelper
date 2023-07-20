@@ -1,6 +1,6 @@
 {
-    "INSTANCE_URL": "https://*.simpleone.ru",
-    "TOKEN": "",
-    "LOCAL_PACK_ID": "",
+    "INSTANCE_URL": "https://rnd-dev.dev.simpleone.ru",
+    "TOKEN": "NzgPl3sLefy7KbInsNBCkfT4p9RMHl9h",
+    "LOCAL_PACK_ID": "168892490200894215",
     "TARGET_DIR_PATH": "D:\\Development\\test\\entities"
 }
