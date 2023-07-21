@@ -26,8 +26,8 @@ func New(cfg Cfg, client Client) *app {
 	}
 }
 
-func (a *app) FindByLocalPackID(localPackID string) (map[string]model.Table, error) {
-	p := fmt.Sprintf("sysparm_query=is_current=1^local_pack_id=%s&sysparm_fields=table_name,record_id&sysparm_limit=0", localPackID)
+func (a *app) FindByLocalPackID() (map[string]model.Table, error) {
+	p := fmt.Sprintf("sysparm_query=is_current=1^local_pack_id=%s&sysparm_fields=table_name,record_id&sysparm_limit=0", a.cfg.GetString("LOCAL_PACK_ID"))
 	body, err := a.client.FetchData("sys_vcs_record", p)
 	if err != nil {
 		return nil, err

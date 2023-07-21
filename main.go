@@ -17,7 +17,7 @@ func main() {
 
 	client := client.New(cfg)
 	vcsrepository := vcsrepository.New(cfg, client)
-	vcs, err := vcsrepository.FindByLocalPackID(cfg.GetString("LOCAL_PACK_ID"))
+	vcs, err := vcsrepository.FindByLocalPackID()
 	if err != nil {
 		log.Panic(err.Error())
 	}

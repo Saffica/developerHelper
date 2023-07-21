@@ -1,31 +1,24 @@
-package config
+package validator
 
 import (
 	"errors"
 	"os"
 )
 
-type Config interface {
-	GetString(string) string
-}
-
 type validator struct {
-	cfg Config
 }
 
-func NewValidator(cfg Config) *validator {
-	return &validator{
-		cfg: cfg,
-	}
+func New() *validator {
+	return &validator{}
 }
 
-func (v *validator) Run() (bool, error) {
-	correctPath, err := v.exists(v.cfg.GetString("TARGET_DIR_PATH"))
+func (v *validator) DirExists(path string) (bool, error) {
+	isExists, err := v.exists(path)
 	if err != nil {
 		return false, err
 	}
 
-	if !correctPath {
+	if !isExists {
 		return false, errors.New("bad target dir path")
 	}
 

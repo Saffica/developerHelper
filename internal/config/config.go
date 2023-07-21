@@ -2,13 +2,18 @@ package config
 
 import (
 	"github.com/spf13/viper"
+
+	"main/internal/validator"
 )
 
 type cfg struct {
+	path string
 }
 
 func New() *cfg {
-	return &cfg{}
+	return &cfg{
+		path: "./configs/config.json",
+	}
 }
 
 func (c *cfg) GetConfig() (*viper.Viper, error) {
@@ -17,8 +22,8 @@ func (c *cfg) GetConfig() (*viper.Viper, error) {
 		return nil, err
 	}
 
-	validator := NewValidator(cfg)
-	if _, err := validator.Run(); err != nil {
+	validator := validator.New()
+	if _, err := validator.DirExists(cfg.GetString("TARGET_DIR_PATH")); err != nil {
 		return nil, err
 	}
 
@@ -27,7 +32,7 @@ func (c *cfg) GetConfig() (*viper.Viper, error) {
 
 func (c *cfg) loadConfig() (*viper.Viper, error) {
 	cfg := viper.New()
-	cfg.SetDefault("cfg.path", "./configs/config.json")
+	cfg.SetDefault("cfg.path", c.path)
 	cfg.AutomaticEnv()
 	cfg.SetConfigFile(cfg.GetString("cfg.path"))
 	err := cfg.ReadInConfig()
