@@ -56,33 +56,20 @@ func (a *app) CreateFiles(recordCandidates map[string]model.Table) (bool, error)
 	return true, nil
 }
 
-<<<<<<< HEAD
 func createDir(p string) (bool, error) {
 	folderIsExist, err := exists(p)
 	if err != nil {
 		return false, err
-=======
-func createDir(p string) {
-	folderIsExist, err := exists(p)
-	if err != nil {
-		log.Panic(err.Error())
->>>>>>> master
 	}
 
 	if !folderIsExist {
 		err = os.Mkdir(p, 0777)
 		if err != nil {
-<<<<<<< HEAD
 			return false, err
 		}
 	}
 
 	return true, nil
-=======
-			log.Panic(err.Error())
-		}
-	}
->>>>>>> master
 }
 
 func exists(path string) (bool, error) {
