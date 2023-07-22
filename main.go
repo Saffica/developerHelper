@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	cfg, err := config.New().GetConfig()
+	cfg, err := config.New("./configs/config.json").GetConfig()
 	if err != nil {
 		log.Panic(err.Error())
 	}

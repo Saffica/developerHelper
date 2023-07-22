@@ -10,9 +10,9 @@ type cfg struct {
 	path string
 }
 
-func New() *cfg {
+func New(p string) *cfg {
 	return &cfg{
-		path: "./configs/config.json",
+		path: p,
 	}
 }
 
