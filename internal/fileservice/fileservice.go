@@ -2,23 +2,39 @@ package fileservice
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"main/internal/client"
-	"main/internal/config"
+	"main/internal/model"
 )
 
-var cfg = config.GetConfig()
+type Config interface {
+	GetString(string) string
+}
 
-func CreateFiles(recordCandidates map[string]client.Table) (bool, error) {
-	files, err := client.GetRecordsByVCS(recordCandidates)
+type Client interface {
+	GetRecordsByVCS(vcs map[string]model.Table) ([]model.Record, error)
+}
+
+type app struct {
+	client Client
+	cfg    Config
+}
+
+func New(cfg Config, client Client) *app {
+	return &app{
+		client: client,
+		cfg:    cfg,
+	}
+}
+
+func (a *app) CreateFiles(recordCandidates map[string]model.Table) (bool, error) {
+	files, err := a.client.GetRecordsByVCS(recordCandidates)
 	if err != nil {
-		log.Panic(err.Error())
+		return false, err
 	}
 
 	for _, i := range files {
-		currentPath := fmt.Sprintf("%s\\%s", cfg.GetString("TARGET_DIR_PATH"), i.TableName)
+		currentPath := fmt.Sprintf("%s\\%s", a.cfg.GetString("TARGET_DIR_PATH"), i.TableName)
 		createDir(currentPath)
 
 		if i.TableName == "sys_widget" {
@@ -29,7 +45,7 @@ func CreateFiles(recordCandidates map[string]client.Table) (bool, error) {
 		file := fmt.Sprintf("%s\\%s", currentPath, i.FileName)
 		f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0777)
 		if err != nil {
-			log.Panic(err.Error())
+			return false, err
 		}
 
 		defer f.Close()
@@ -40,18 +56,20 @@ func CreateFiles(recordCandidates map[string]client.Table) (bool, error) {
 	return true, nil
 }
 
-func createDir(p string) {
+func createDir(p string) (bool, error) {
 	folderIsExist, err := exists(p)
 	if err != nil {
-		log.Panic(err.Error())
+		return false, err
 	}
 
 	if !folderIsExist {
 		err = os.Mkdir(p, 0777)
 		if err != nil {
-			log.Panic(err.Error())
+			return false, err
 		}
 	}
+
+	return true, nil
 }
 
 func exists(path string) (bool, error) {

@@ -12,18 +12,28 @@ import (
 
 	"github.com/spf13/viper"
 
-	"main/internal/config"
+	"main/internal/model"
 )
 
 var (
-	cfg                 = config.GetConfig()
-	authorizationHeader = getAuthorizationHeader(cfg)
-	tr                  = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	client              = &http.Client{Transport: tr, Timeout: 10 * time.Second}
+	tr     = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	client = &http.Client{Transport: tr, Timeout: 10 * time.Second}
 )
 
-func GetRecordsByVCS(vcs map[string]Table) ([]Record, error) {
-	r := []Record{}
+type app struct {
+	cfg        *viper.Viper
+	authHeader string
+}
+
+func New(cfg *viper.Viper) *app {
+	return &app{
+		cfg:        cfg,
+		authHeader: fmt.Sprintf("Bearer %s", cfg.GetString("TOKEN")),
+	}
+}
+
+func (a *app) GetRecordsByVCS(vcs map[string]model.Table) ([]model.Record, error) {
+	r := []model.Record{}
 
 	for tableName, v := range vcs {
 		if len(v.RecordID) == 0 {
@@ -31,7 +41,7 @@ func GetRecordsByVCS(vcs map[string]Table) ([]Record, error) {
 		}
 
 		p := fmt.Sprintf("sysparm_query=sys_idIN%s&sysparm_fields=%s&sysparm_limit=0", strings.Join(v.RecordID, "@"), strings.Join(v.Column, ","))
-		body, err := FetchData(tableName, p)
+		body, err := a.FetchData(tableName, p)
 		if err != nil {
 			return nil, err
 		}
@@ -50,14 +60,14 @@ func GetRecordsByVCS(vcs map[string]Table) ([]Record, error) {
 
 }
 
-func FetchData(t string, p string) ([]byte, error) {
-	url := fmt.Sprintf("%s/rest/v1/table/%s?%s", cfg.GetString("INSTANCE_URL"), t, p)
+func (a *app) FetchData(t string, p string) ([]byte, error) {
+	url := fmt.Sprintf("%s/rest/v1/table/%s?%s", a.cfg.GetString("INSTANCE_URL"), t, p)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("authorization", authorizationHeader)
+	req.Header.Add("authorization", a.authHeader)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -77,15 +87,10 @@ func FetchData(t string, p string) ([]byte, error) {
 	return body, nil
 }
 
-func getAuthorizationHeader(c *viper.Viper) string {
-	authorizationHeader := fmt.Sprintf("Bearer %s", c.GetString("TOKEN"))
-	return authorizationHeader
-}
-
-func prepareRecords(inputRecord map[string]interface{}, columns []string, tableName string) []Record {
+func prepareRecords(inputRecord map[string]interface{}, columns []string, tableName string) []model.Record {
 	m := map[string]string{}
 	var sysID string
-	r := []Record{}
+	r := []model.Record{}
 
 	for j := range columns {
 		if columns[j] == "sys_id" {
@@ -100,7 +105,7 @@ func prepareRecords(inputRecord map[string]interface{}, columns []string, tableN
 
 	for columnName := range m {
 		extension := geteFileExtension(tableName, columnName)
-		r = append(r, Record{
+		r = append(r, model.Record{
 			FileName:  getFileName(sysID, tableName, columnName, extension),
 			Value:     m[columnName],
 			TableName: tableName,

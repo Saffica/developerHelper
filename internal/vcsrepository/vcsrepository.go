@@ -3,15 +3,32 @@ package vcsrepository
 import (
 	"encoding/json"
 	"fmt"
-	"main/internal/client"
-	"main/internal/config"
+	"main/internal/model"
 )
 
-var cfg = config.GetConfig()
+type Client interface {
+	FetchData(t string, p string) ([]byte, error)
+}
 
-func FindByLocalPackID(localPackID string) (map[string]client.Table, error) {
-	p := fmt.Sprintf("sysparm_query=is_current=1^local_pack_id=%s&sysparm_fields=table_name,record_id&sysparm_limit=0", localPackID)
-	body, err := client.FetchData("sys_vcs_record", p)
+type Cfg interface {
+	GetString(string) string
+}
+
+type app struct {
+	client Client
+	cfg    Cfg
+}
+
+func New(cfg Cfg, client Client) *app {
+	return &app{
+		client: client,
+		cfg:    cfg,
+	}
+}
+
+func (a *app) FindByLocalPackID() (map[string]model.Table, error) {
+	p := fmt.Sprintf("sysparm_query=is_current=1^local_pack_id=%s&sysparm_fields=table_name,record_id&sysparm_limit=0", a.cfg.GetString("LOCAL_PACK_ID"))
+	body, err := a.client.FetchData("sys_vcs_record", p)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +39,7 @@ func FindByLocalPackID(localPackID string) (map[string]client.Table, error) {
 		return nil, err
 	}
 
-	r, err := prepareVCS(vcs.Data)
+	r, err := a.prepareVCS(vcs.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -31,17 +48,17 @@ func FindByLocalPackID(localPackID string) (map[string]client.Table, error) {
 
 }
 
-func prepareVCS(vcs []vcsDataResponse) (map[string]client.Table, error) {
-	c, err := getScriptedColumns()
+func (a *app) prepareVCS(vcs []vcsDataResponse) (map[string]model.Table, error) {
+	c, err := a.getScriptedColumns()
 	if err != nil {
 		return nil, err
 	}
 
-	r := make(map[string]client.Table, len(c))
+	r := make(map[string]model.Table, len(c))
 
 	for k, v := range c {
 		if _, ok := r[k]; !ok {
-			r[k] = client.Table{Column: append(v, "sys_id")}
+			r[k] = model.Table{Column: append(v, "sys_id")}
 		}
 	}
 
@@ -55,13 +72,13 @@ func prepareVCS(vcs []vcsDataResponse) (map[string]client.Table, error) {
 	return r, nil
 }
 
-func getScriptedColumns() (map[string][]string, error) {
-	body, err := client.FetchData("sys_db_column", "sysparm_fields=column_name,table_id&sysparm_query=column_type_id=29&sysparm_limit=0")
+func (a *app) getScriptedColumns() (map[string][]string, error) {
+	body, err := a.client.FetchData("sys_db_column", "sysparm_fields=column_name,table_id&sysparm_query=column_type_id=29&sysparm_limit=0")
 	if err != nil {
 		return nil, err
 	}
 
-	tables, err := getTables()
+	tables, err := a.getTables()
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +101,8 @@ func getScriptedColumns() (map[string][]string, error) {
 
 }
 
-func getTables() (map[string]string, error) {
-	body, err := client.FetchData("sys_db_table", "sysparm_fields=sys_id,name&sysparm_limit=0")
+func (a *app) getTables() (map[string]string, error) {
+	body, err := a.client.FetchData("sys_db_table", "sysparm_fields=sys_id,name&sysparm_limit=0")
 	if err != nil {
 		return nil, err
 	}

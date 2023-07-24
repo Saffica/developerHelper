@@ -3,18 +3,27 @@ package main
 import (
 	"log"
 
+	"main/internal/client"
 	"main/internal/config"
 	"main/internal/fileservice"
 	"main/internal/vcsrepository"
 )
 
-var cfg = config.GetConfig()
-
 func main() {
-	config.Validation()
-	vcs, err := vcsrepository.FindByLocalPackID(cfg.GetString("LOCAL_PACK_ID"))
+	cfg, err := config.New("./configs/config.json").GetConfig()
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	fileservice.CreateFiles(vcs)
+
+	client := client.New(cfg)
+	vcsrepository := vcsrepository.New(cfg, client)
+	vcs, err := vcsrepository.FindByLocalPackID()
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	fileservice := fileservice.New(cfg, client)
+	if _, err := fileservice.CreateFiles(vcs); err != nil {
+		log.Panic(err.Error())
+	}
+
 }
