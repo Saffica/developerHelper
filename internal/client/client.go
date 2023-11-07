@@ -124,6 +124,10 @@ func getFileName(sysID string, tableName string, columnName string, extension st
 		}
 	}
 
+	if columnName == "script" {
+		return fmt.Sprintf("%s.%s", sysID, extension)
+	}
+
 	return fmt.Sprintf("%s_%s.%s", sysID, columnName, extension)
 }
 
