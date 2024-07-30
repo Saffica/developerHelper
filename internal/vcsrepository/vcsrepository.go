@@ -90,8 +90,9 @@ func (a *app) getScriptedColumns() (map[string][]string, error) {
 	}
 
 	r := map[string][]string{
-		"sys_widget":    {"template", "css"},
-		"sys_ui_action": {"condition"},
+		"sys_widget":                 {"template", "css"},
+		"sys_ui_action":              {"condition"},
+		"sys_re_model_client_script": {"script"},
 	}
 	for i := range scr.Data {
 		tableName := tables[scr.Data[i].TableID.Value]
